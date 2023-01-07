@@ -74,7 +74,6 @@ const downloadFile = async () => {
 }
 
 const readAllCardData = () => {
-  console.log("download file from:" + process.env.JSON_URL)
   return new Promise<Card[]>(resolve => {
     const allCard: Card[] = []
     fs.createReadStream(TEMP_FILE_NAME)
@@ -108,4 +107,8 @@ const readAllSetData = () => {
   })
 }
 
-main()
+main().finally(() => {
+  if (process.env.KEEP_JSON_FILE !== "yes") {
+    fs.unlinkSync(TEMP_FILE_NAME)
+  }
+})
