@@ -1,4 +1,7 @@
-
+export type Set = {
+  name: string
+  code: string
+}
 
 export type Card = {
   uuid: string
@@ -22,6 +25,7 @@ export type Card = {
   rarity: string
   otherFaceId: string
   identifiers: { [key: string]: string }
+  setCode: string
 }
 
 export type ForeignData = {
