@@ -1,0 +1,3 @@
+[submodule "schema"]
+	path = schema
+	url = https://github.com/yututi/mtg-schema.git

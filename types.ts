@@ -1,12 +1,13 @@
 
 
 export type Card = {
-  asciiName:string
+  uuid: string
+  asciiName: string
   name: string
   manaCost: string
-  colorIdentity:string[]
-  manaValue:number
-  faceName:string
+  colorIdentity: string[]
+  manaValue: number
+  faceName: string
   foreignData: ForeignData[]
   hasAlternativeDeckLimit: boolean
   legalities: any
@@ -16,7 +17,11 @@ export type Card = {
   printings: string[]
   supertypes: string[]
   subtypes: string[]
-  types:string[]
+  types: string[]
+  text: string
+  rarity: string
+  otherFaceId: string
+  identifiers: { [key: string]: string }
 }
 
 export type ForeignData = {
