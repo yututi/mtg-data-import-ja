@@ -7,6 +7,8 @@ import fs from "fs"
 import pino from "pino"
 require('dotenv').config();
 
+// TODO JSONStreamは使わない方がいいかも
+
 const TEMP_FILE_NAME = "./set.json"
 
 const logger = pino({
