@@ -4,16 +4,30 @@ import JSONStream from "JSONStream"
 import es from "event-stream"
 import { Card, Set } from "./types"
 import fs from "fs"
+import pino from "pino"
 require('dotenv').config();
 
 const TEMP_FILE_NAME = "./set.json"
 
+const logger = pino({
+  level: process.env.LOG_LEVEL || "info"
+})
 const prisma = new PrismaClient()
 
 async function main() {
+  logger.info("import json start.")
+
+  const hash = await fetchHashValue()
+  logger.debug("hash: " + hash)
+  const lastImported = await prisma.lastImported.findFirst()
+  const isSameHash = lastImported?.sha === hash
+  if (isSameHash) {
+    logger.info("hash not changed. skip import.")
+    return;
+  }
 
   if (!fs.existsSync(TEMP_FILE_NAME)) {
-    await downloadFile()
+    await downloadJsonFile()
   }
 
   const allSet = await readAllSetData()
@@ -23,11 +37,11 @@ async function main() {
     skipDuplicates: true
   })
 
-  console.log(`set insert done. count:${createSetResult.count}`)
+  logger.info(`set insert done. count:${createSetResult.count}`)
 
   const allCard = await readAllCardData()
 
-  console.log("card insert start")
+  logger.debug("card insert start")
 
   const cardCreateResult = await prisma.card.createMany({
     data: allCard
@@ -59,11 +73,35 @@ async function main() {
       skipDuplicates: true
   })
 
-  console.log(`card insert done. count:${cardCreateResult.count}`)
+  logger.info(`card insert done. count:${cardCreateResult.count}`)
+
+  await prisma.lastImported.deleteMany({})
+  await prisma.lastImported.create({
+    data: {
+      sha: hash,
+      at: new Date()
+    }
+  })
 }
 
-const downloadFile = async () => {
-  console.log("download file from:" + process.env.JSON_URL)
+const fetchHashValue = async () => {
+  const hashFileUrl = process.env.JSON_URL + ".sha256"
+  logger.info("download sha256 from:" + hashFileUrl)
+  let text = ""
+  return new Promise<string>(resolve => {
+    request({ url: hashFileUrl, encoding: "utf-8" })
+    .on("data", (data) => {
+      console.log(data)
+      text += data
+    }).on("end", () => {
+      console.log(text)
+      resolve(text)
+    })
+  })
+}
+
+const downloadJsonFile = async () => {
+  logger.info("download file from:" + process.env.JSON_URL)
   return new Promise<void>(resolve => {
     const fstream = fs.createWriteStream(TEMP_FILE_NAME)
     request({ url: process.env.JSON_URL || "" }).pipe(fstream).on("finish", () => {
@@ -107,8 +145,13 @@ const readAllSetData = () => {
   })
 }
 
-main().finally(() => {
+main()
+.catch(e => {
+  logger.error(e)
+})
+.finally(() => {
   if (process.env.KEEP_JSON_FILE !== "yes") {
     fs.unlinkSync(TEMP_FILE_NAME)
   }
+  logger.info("import json done.")
 })
