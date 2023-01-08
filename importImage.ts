@@ -24,7 +24,7 @@ const prisma = new PrismaClient()
 async function main() {
   forEachCardChunk(async (importDataList) => {
 
-    importDataList.map(async data => {
+    const uploader = importDataList.map(async data => {
       const res = request(`https://api.scryfall.com/cards/${data.scryfallId}?format=image`)
 
       await s3Client.upload({
@@ -33,7 +33,7 @@ async function main() {
         Body: res
       }).promise()
 
-      prisma.card.update({
+      await prisma.card.update({
         data: {
           isImageImported: true
         },
@@ -43,6 +43,7 @@ async function main() {
       })
     })
 
+    await Promise.all(uploader)
   })
 }
 
@@ -85,6 +86,5 @@ const selectUnimportedCardChunk = (page: number) => {
     }
   })
 }
-
 
 main()
