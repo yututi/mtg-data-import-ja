@@ -72,7 +72,7 @@ async function main() {
           setCode: card.setCode
         }
       }),
-      skipDuplicates: true
+    skipDuplicates: true
   })
 
   logger.info(`card insert done. count:${cardCreateResult.count}`)
@@ -92,13 +92,13 @@ const fetchHashValue = async () => {
   let text = ""
   return new Promise<string>(resolve => {
     request({ url: hashFileUrl, encoding: "utf-8" })
-    .on("data", (data) => {
-      console.log(data)
-      text += data
-    }).on("end", () => {
-      console.log(text)
-      resolve(text)
-    })
+      .on("data", (data) => {
+        console.log(data)
+        text += data
+      }).on("end", () => {
+        console.log(text)
+        resolve(text)
+      })
   })
 }
 
@@ -148,12 +148,12 @@ const readAllSetData = () => {
 }
 
 main()
-.catch(e => {
-  logger.error(e)
-})
-.finally(() => {
-  if (process.env.KEEP_JSON_FILE !== "yes") {
-    fs.unlinkSync(TEMP_FILE_NAME)
-  }
-  logger.info("import json done.")
-})
+  .catch(e => {
+    logger.error(e)
+  })
+  .finally(() => {
+    if (process.env.KEEP_JSON_FILE !== "yes") {
+      fs.unlinkSync(TEMP_FILE_NAME)
+    }
+    logger.info("import json done.")
+  })
