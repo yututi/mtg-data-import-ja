@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import request from "request";
-import { parse } from "jsonstream"
+import { parse } from "jsonstream-ts"
 import es from "event-stream"
 import { Card, Set } from "./types"
 import fs from "fs"
@@ -117,7 +117,7 @@ const readAllCardData = () => {
   return new Promise<Card[]>(resolve => {
     const allCard: Card[] = []
     fs.createReadStream(TEMP_FILE_NAME)
-      .pipe(parse("data.*.cards.*"))
+      .pipe(parse("data.*.cards.*", undefined))
       .pipe(es.mapSync((card: Card) => {
 
         allCard.push(card)
@@ -134,7 +134,7 @@ const readAllSetData = () => {
   return new Promise<Set[]>(resolve => {
     const allSet: Set[] = []
     fs.createReadStream(TEMP_FILE_NAME)
-      .pipe(parse("data.*"))
+      .pipe(parse("data.*", undefined))
       .pipe(es.mapSync((set: Set) => {
         allSet.push({
           name: set.name,
