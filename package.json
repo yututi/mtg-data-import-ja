@@ -7,7 +7,7 @@
     "importJson": "ts-node importJson.ts",
     "importImage": "ts-node importImage.ts",
     "pm": "prisma migrate dev --name init",
-    "pm:prod": "prisma migrate production",
+    "pm:prod": "prisma migrate deploy",
     "pg": "prisma generate",
     "pf": "prisma format"
   },
