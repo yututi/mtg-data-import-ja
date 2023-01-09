@@ -22,6 +22,7 @@ export type Card = {
   subtypes: string[]
   types: string[]
   text: string
+  flavorText: string
   rarity: string
   otherFaceId: string
   identifiers: { [key: string]: string }
@@ -32,5 +33,6 @@ export type ForeignData = {
   language: string
   name: string
   text: string
+  flavorText: string
   type: string
 }

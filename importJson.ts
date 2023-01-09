@@ -64,7 +64,7 @@ async function main() {
           subTypes: card.subtypes,
           superTypes: card.supertypes,
           types: card.types,
-          flavorText: localizedData?.text,
+          flavorText: localizedData?.flavorText || card.flavorText,
           text: localizedData?.text || card.text,
           scryfallId: card.identifiers.scryfallId,
           rarity: card.rarity,

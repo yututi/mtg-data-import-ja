@@ -16,13 +16,13 @@
     "@types/event-stream": "^4.0.0",
     "@types/node": "^18.11.18",
     "@types/request": "^2.48.8",
+    "@types/jsonstream": "^0.8.30",
     "prisma": "^4.8.1",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
     "@prisma/client": "^4.8.1",
-    "@types/jsonstream": "^0.8.30",
     "aws-sdk": "^2.1290.0",
     "dotenv": "^16.0.3",
     "event-stream": "^4.0.1",
