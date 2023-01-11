@@ -1,12 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 import request from "request";
-import JSONStream from "JSONStream"
-import es from "event-stream"
-import { Card, ForeignData } from "./types"
 import fs from "fs"
 require('dotenv').config();
-import AWS from 'aws-sdk'
 import S3 from 'aws-sdk/clients/s3'
+import { downloadImageFromScryfall } from './utils/scryfall';
 
 // WIP
 
@@ -14,23 +11,32 @@ const region = 'ap-northeast-1'
 const s3Client = new S3({
   region,
 })
-const bucketName = 'YOUR_BUCKET_NAME'
-
 const CHUNK_SIZE = 10;
 
 const prisma = new PrismaClient()
 
-
 async function main() {
   forEachCardChunk(async (importDataList) => {
 
-    const uploader = importDataList.map(async data => {
-      const res = request(`https://api.scryfall.com/cards/${data.scryfallId}?format=image`)
+    for (const {
+      collectorNumber,
+      id,
+      setCode,
+      isFrontFace
+    } of importDataList) {
+      console.log("import start. " + id)
+
+      const response = await downloadImageFromScryfall({ code: setCode, number: collectorNumber, isFrontFace })
+
+      if (!response) {
+        console.log("image not found. " + id)
+        continue
+      }
 
       await s3Client.upload({
-        Bucket: bucketName,
-        Key: data.id,
-        Body: res
+        Bucket: process.env.S3_BUCKET_NAME || "",
+        Key: id + ".jpeg",
+        Body: response.body
       }).promise()
 
       await prisma.card.update({
@@ -38,18 +44,18 @@ async function main() {
           isImageImported: true
         },
         where: {
-          uuid: data.id
+          uuid: id
         }
       })
-    })
-
-    await Promise.all(uploader)
+    }
   })
 }
 
 type ImportData = {
   id: string
-  scryfallId: string
+  collectorNumber: string
+  setCode: string
+  isFrontFace: boolean
 }
 type Callback = (cards: ImportData[]) => Promise<unknown>
 const forEachCardChunk = async (callback: Callback) => {
@@ -59,16 +65,17 @@ const forEachCardChunk = async (callback: Callback) => {
     const cards = await selectUnimportedCardChunk(page++);
     done = cards.length < CHUNK_SIZE;
     await callback(cards
-      .filter(card => !!card.scryfallId)
       .map(card => ({
         id: card.uuid,
-        scryfallId: card.scryfallId!
+        collectorNumber: card.number,
+        setCode: card.setCode.toLowerCase(),
+        isFrontFace: card.isFrontFace
       })))
     await sleep(500)
   }
 }
 
-const sleep = (ms:number) => {
+const sleep = (ms: number) => {
   return new Promise(resolve => {
     setTimeout(resolve, ms)
   })
@@ -80,6 +87,13 @@ const selectUnimportedCardChunk = (page: number) => {
     skip: page * CHUNK_SIZE,
     orderBy: {
       uuid: "asc"
+    },
+    select: {
+      uuid: true,
+      scryfallId: true,
+      number: true,
+      setCode: true,
+      isFrontFace: true
     },
     where: {
       isImageImported: false

@@ -13,7 +13,7 @@ export type Card = {
   faceName: string
   foreignData: ForeignData[]
   hasAlternativeDeckLimit: boolean
-  legalities: any
+  legalities: { [key: string]: string }
   loyalty: string
   power: string
   toughness: string
@@ -24,9 +24,11 @@ export type Card = {
   text: string
   flavorText: string
   rarity: string
-  otherFaceId: string
+  otherFaceIds: string[]
+  side: string
   identifiers: { [key: string]: string }
   setCode: string
+  number: string
 }
 
 export type ForeignData = {

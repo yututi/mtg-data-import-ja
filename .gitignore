@@ -3,3 +3,5 @@ node_modules
 .env
 PioneerAtomic.json
 Pioneer.json
+set.json
+img

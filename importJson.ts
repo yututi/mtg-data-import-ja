@@ -5,6 +5,7 @@ import es from "event-stream"
 import { Card, Set } from "./types"
 import fs from "fs"
 import pino from "pino"
+import { BGPPeer } from 'aws-sdk/clients/directconnect';
 require('dotenv').config()
 
 // TODO JSONStreamは使わない方がいいかも
@@ -47,6 +48,7 @@ async function main() {
 
   const cardCreateResult = await prisma.card.createMany({
     data: allCard
+      .filter(distinctAndPioneerfiliter)
       .map(card => {
         const localizedData = card.foreignData.filter(data => data.language === "Japanese").pop()
 
@@ -68,8 +70,10 @@ async function main() {
           text: localizedData?.text || card.text,
           scryfallId: card.identifiers.scryfallId,
           rarity: card.rarity,
-          otherFaceId: card.otherFaceId,
-          setCode: card.setCode
+          otherFaceUuid: (card.otherFaceIds || []).pop(),
+          isFrontFace: card.side == null || card.side === "a",
+          setCode: card.setCode,
+          number: card.number
         }
       }),
     skipDuplicates: true
@@ -93,10 +97,8 @@ const fetchHashValue = async () => {
   return new Promise<string>(resolve => {
     request({ url: hashFileUrl, encoding: "utf-8" })
       .on("data", (data) => {
-        console.log(data)
         text += data
       }).on("end", () => {
-        console.log(text)
         resolve(text)
       })
   })
@@ -147,9 +149,24 @@ const readAllSetData = () => {
   })
 }
 
+const distinctAndPioneerfiliter = (card: Card): boolean => {
+
+  // collector numberが数値以外のものは絵違い,またはalchemyなど特殊フォーマットのカードなので除外
+  if (Number.isNaN(Number(card.number))) {
+    return false
+  }
+
+  if (card.legalities.pioneer !== "Legal") {
+    return false
+  }
+
+  return true
+}
+
 main()
   .catch(e => {
     logger.error(e)
+    throw e;
   })
   .finally(() => {
     if (process.env.KEEP_JSON_FILE !== "yes") {
