@@ -6,6 +6,7 @@
   "scripts": {
     "importJson": "ts-node importJson.ts",
     "importImage": "ts-node importImage.ts",
+    "removeDuplication": "ts-node removeDuplication.ts",
     "pm": "prisma migrate dev --name init",
     "pm:prod": "prisma migrate deploy",
     "pg": "prisma generate",

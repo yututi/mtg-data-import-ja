@@ -17,6 +17,7 @@ const logger = pino({
 })
 const prisma = new PrismaClient()
 
+// mtgjsonからjsonファイルをダウンロードしてdbにインポートする
 async function main() {
   logger.info("import json start.")
 
@@ -56,7 +57,7 @@ async function main() {
           uuid: card.uuid,
           colorIdentities: card.colorIdentity,
           cardTypeJa: localizedData?.type || "",
-          isLegendary: card.types.includes("legendary"),
+          isLegendary: card.types.includes("Legendary"),
           loyalty: card.loyalty,
           manaCost: card.manaCost,
           manaValue: card.manaValue,
@@ -72,6 +73,7 @@ async function main() {
           rarity: card.rarity,
           otherFaceUuid: (card.otherFaceIds || []).pop(),
           isFrontFace: card.side == null || card.side === "a",
+          isMainSpell: card.side == null || card.side === "a",
           setCode: card.setCode,
           number: card.number
         }

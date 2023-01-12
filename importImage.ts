@@ -1,11 +1,7 @@
 import { PrismaClient } from '@prisma/client'
-import request from "request";
-import fs from "fs"
 require('dotenv').config();
 import S3 from 'aws-sdk/clients/s3'
 import { downloadImageFromScryfall } from './utils/scryfall';
-
-// WIP
 
 const region = 'ap-northeast-1'
 const s3Client = new S3({
@@ -15,6 +11,8 @@ const CHUNK_SIZE = 10;
 
 const prisma = new PrismaClient()
 
+// dbのisImageImportedがfalseのデータを抽出し、scrtfallから画像を取得する。
+// 取得できたらisImageImportedをtrueにする。
 async function main() {
   forEachCardChunk(async (importDataList) => {
 
@@ -22,14 +20,29 @@ async function main() {
       collectorNumber,
       id,
       setCode,
-      isFrontFace
+      isMainSpell,
+      otherFaceUuid
     } of importDataList) {
       console.log("import start. " + id)
 
-      const response = await downloadImageFromScryfall({ code: setCode, number: collectorNumber, isFrontFace })
+      const response = await downloadImageFromScryfall({ code: setCode, number: collectorNumber, isMainSpell })
 
       if (!response) {
         console.log("image not found. " + id)
+
+        if (!isMainSpell) {
+          // 表面に２つ分のカードが記載されているケース
+          // 画像は存在しないのでインポート済みとする
+          await prisma.card.update({
+            data: {
+              isImageImported: true
+            },
+            where: {
+              uuid: id
+            }
+          })
+        }
+
         continue
       }
 
@@ -39,9 +52,24 @@ async function main() {
         Body: response.body
       }).promise()
 
+      // ２つ呪文がありメインでない呪文の画像が取得できた場合、それは両面カード
+      // 表面側の両面カードフラグを立てる
+      if (!isMainSpell && otherFaceUuid) {
+        console.log("detect reversible card. " + otherFaceUuid)
+        await prisma.card.update({
+          data: {
+            isReversible: true
+          },
+          where: {
+            uuid: otherFaceUuid
+          }
+        })
+      }
+
       await prisma.card.update({
         data: {
-          isImageImported: true
+          isImageImported: true,
+          isReversible: !isMainSpell
         },
         where: {
           uuid: id
@@ -56,20 +84,23 @@ type ImportData = {
   collectorNumber: string
   setCode: string
   isFrontFace: boolean
+  isMainSpell: boolean
+  otherFaceUuid: string | null
 }
 type Callback = (cards: ImportData[]) => Promise<unknown>
 const forEachCardChunk = async (callback: Callback) => {
-  let page = 0;
   let done = false
   while (!done) {
-    const cards = await selectUnimportedCardChunk(page++);
+    const cards = await selectUnimportedCardChunk();
     done = cards.length < CHUNK_SIZE;
     await callback(cards
       .map(card => ({
         id: card.uuid,
         collectorNumber: card.number,
         setCode: card.setCode.toLowerCase(),
-        isFrontFace: card.isFrontFace
+        isFrontFace: card.isFrontFace,
+        isMainSpell: card.isMainSpell,
+        otherFaceUuid: card.otherFaceUuid
       })))
     await sleep(500)
   }
@@ -81,10 +112,9 @@ const sleep = (ms: number) => {
   })
 }
 
-const selectUnimportedCardChunk = (page: number) => {
+const selectUnimportedCardChunk = () => {
   return prisma.card.findMany({
     take: CHUNK_SIZE,
-    skip: page * CHUNK_SIZE,
     orderBy: {
       uuid: "asc"
     },
@@ -93,7 +123,9 @@ const selectUnimportedCardChunk = (page: number) => {
       scryfallId: true,
       number: true,
       setCode: true,
-      isFrontFace: true
+      isFrontFace: true,
+      isMainSpell: true,
+      otherFaceUuid: true
     },
     where: {
       isImageImported: false
