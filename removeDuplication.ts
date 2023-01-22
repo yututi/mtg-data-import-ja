@@ -43,6 +43,9 @@ const removeUntranslatedCard = async () => {
                 equals: card.uuid
               }
             }
+          },
+          {
+            isFrontFace: card.isFrontFace
           }
         ]
       }
@@ -59,11 +62,19 @@ const removeUntranslatedCard = async () => {
 
 const removeDuplicatedJaCard = async () => {
 
-  const result = await prisma.$queryRaw<{ name: string }[]>(
+  const singleSpellDuplicatedCards = await prisma.$queryRaw<{ name: string }[]>(
     Prisma.sql`select "name" from "Card" where "otherFaceUuid" is null group by "name" having count("name") > 1`
   )
+  const doubleSpellDuplicatedCards = await prisma.$queryRaw<{ name: string }[]>(
+    Prisma.sql`select "name" from "Card" group by "name", "text" having count("name") > 1 and count("text") > 1`
+  )
 
-  for (const { name } of result) {
+  const duplicatedCardNames = new Set([
+    ...singleSpellDuplicatedCards.map(c => c.name),
+    ...doubleSpellDuplicatedCards.map(c => c.name)
+  ])
+
+  for (const name of duplicatedCardNames) {
 
     const cardsHasSameName = await prisma.card.findMany({
       where: {
