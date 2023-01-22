@@ -1,5 +1,8 @@
 version: 0.2
 
+env:
+  git-credential-helper: yes
+
 phases:
   pre_build:
     commands:
@@ -7,6 +10,7 @@ phases:
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
   build:
     commands:
+      - git submodule update --init --recursive
       - echo Build started on `date`
       - echo Building the Docker image...
       - docker build -t $IMAGE_REPO_NAME .
