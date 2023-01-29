@@ -1,7 +1,7 @@
 FROM node:16-bullseye
 
-WORKDIR /usr/app
-COPY ./ /usr/app
+WORKDIR /app
+COPY . .
 
-RUN npm install
+RUN npm ci
 RUN npm run pg
