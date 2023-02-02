@@ -22,41 +22,49 @@ const removeUntranslatedCard = async () => {
     }
   })
 
-  for (const card of untranslatedCards) {
-
-    const translated = await prisma.card.findFirst({
-      where: {
-        AND: [
-          {
-            setCode: card.setCode
-          },
-          {
-            number: card.number
-          },
-          {
-            uuid: {
-              not: card.uuid
-            }
-          },
-          {
-            isMainSpell: card.isMainSpell
-          },
-          {
-            cardTypeJa: {
-              not: ""
-            }
-          }
-        ]
+  await prisma.card.deleteMany({
+    where: {
+      uuid: {
+        in: untranslatedCards.map(card => card.uuid)
       }
-    })
-    if (translated) {
-      await prisma.card.delete({
-        where: {
-          uuid: card.uuid
-        }
-      })
     }
-  }
+  })
+
+  // for (const card of untranslatedCards) {
+
+  //   const translated = await prisma.card.findFirst({
+  //     where: {
+  //       AND: [
+  //         {
+  //           setCode: card.setCode
+  //         },
+  //         {
+  //           number: card.number
+  //         },
+  //         {
+  //           uuid: {
+  //             not: card.uuid
+  //           }
+  //         },
+  //         {
+  //           isMainSpell: card.isMainSpell
+  //         },
+  //         {
+  //           cardTypeJa: {
+  //             not: ""
+  //           }
+  //         }
+  //       ]
+  //     }
+  //   })
+  //   if (translated) {
+  //     await prisma.card.delete({
+  //       where: {
+  //         uuid: card.uuid
+  //       }
+  //     })
+  //   }
+  // }
 }
 
 const removeDuplicatedJaCard = async () => {
